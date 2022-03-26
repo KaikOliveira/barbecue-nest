@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -10,24 +11,50 @@ export class UserService {
   constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
   async create(createUserDto: CreateUserDto) {
-    const test = await this.userModel.create(createUserDto);
+    const userExists = await this.userModel
+      .findOne({ user: createUserDto.user })
+      .exec();
 
-    return test;
+    if (userExists) throw new BadRequestException('User already exists');
+
+    const hasedPassword = await bcrypt.hash(createUserDto.password, 8);
+
+    createUserDto.password = hasedPassword;
+
+    const createdUser = new this.userModel(createUserDto);
+
+    return await createdUser.save();
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async findAll() {
+    return await this.userModel.find().exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(_id: string) {
+    const user = await this.userModel.findOne({ _id });
+
+    if (!user) throw new BadRequestException('User does not exist');
+
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  update(_id: string, updateUserDto: UpdateUserDto) {
+    return `This action updates a user`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(_id: string) {
+    // const user = await this.userModel
+    //   .findById(_id, (err, adventure) => {
+    //     if (err) return;
+
+    //     return adventure;
+    //   })
+    //   .exec();
+
+    const user = await this.userModel.findOne({ _id });
+
+    if (!user) throw new BadRequestException('User does not exist');
+
+    await this.userModel.deleteOne({ _id }).exec();
   }
 }

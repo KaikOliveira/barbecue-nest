@@ -22,12 +22,6 @@ services:
       - server-network
     ports:
       - 27017:27017
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
   mongo-express:
     image: mongo-express
     container_name: server-mongo-express
@@ -44,11 +38,5 @@ services:
       - server-network
     ports:
       - 8081:8081
-    healthcheck:
-      test: wget --quiet --tries=3 --spider http://admin:admin123@localhost:8081 || exit 1
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
 networks:
   server-network:
